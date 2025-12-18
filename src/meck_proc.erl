@@ -65,6 +65,7 @@
                 trackers = [] :: [tracker()],
                 restore = false :: boolean()}).
 
+-type condition() :: {cond_fun(), cond_state()}.
 -type cond_state() :: term().
 -type cond_fun() :: fun((Args :: [term()], cond_state()) -> cond_state()).
 
