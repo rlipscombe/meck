@@ -54,7 +54,6 @@
 -export([wait/4]).
 -export([wait/5]).
 -export([wait/6]).
--export([wait_for/6]).
 -export([mocked/0]).
 
 %% Syntactic sugar
@@ -65,6 +64,8 @@
 -export([passthrough/0]).
 -export([exec/1]).
 -export([is/1]).
+
+-eqwalizer(ignore).
 
 %%%============================================================================
 %%% Types
@@ -130,6 +131,12 @@
 -type func_clause_spec() :: {args_spec(), ret_spec()}.
 %% It is used in {@link expect/3} and {@link expect/4} to define a function
 %% clause of complex multi-clause expectations.
+
+-type condition() :: {condition_fun(), condition_state()}.
+-type condition_state() :: term().
+-type condition_fun() :: fun((Args :: [term()], condition_state()) -> condition_state()).
+%% {@link wait/5} and {@link wait/6} accept a "condition" -- a predicate that can
+%% collect state.
 
 %%%============================================================================
 %%% Interface exports
@@ -588,7 +595,7 @@ wait(Times, Mod, OptFunc, OptArgsSpec, Timeout) ->
 %% latter. If `Times' number of matching call has already occurred, then the
 %% function returns `ok' immediately.
 -spec wait(Times, Mod, OptFunc, OptArgsSpec, OptCallerPid, Timeout) -> ok when
-      Times :: pos_integer(),
+      Times :: pos_integer() | condition(),
       Mod :: atom(),
       OptFunc :: '_' | atom(),
       OptArgsSpec :: '_' | args_spec(),
@@ -600,9 +607,8 @@ wait(Times, Mod, OptFunc, OptArgsSpec, OptCallerPid, Timeout)
   when is_integer(Times) andalso Times > 0 andalso
        is_integer(Timeout) andalso Timeout >= 0 ->
     ArgsMatcher = meck_args_matcher:new(OptArgsSpec),
-    meck_proc:wait(Mod, Times, OptFunc, ArgsMatcher, OptCallerPid, Timeout).
-
-wait_for({Cond, CondState}, Mod, OptFunc, OptArgsSpec, OptCallerPid, Timeout) when is_function(Cond, 2) ->
+    meck_proc:wait(Mod, Times, OptFunc, ArgsMatcher, OptCallerPid, Timeout);
+wait({Cond, CondState}, Mod, OptFunc, OptArgsSpec, OptCallerPid, Timeout) when is_function(Cond, 2) ->
     ArgsMatcher = meck_args_matcher:new(OptArgsSpec),
     meck_proc:wait_for(Mod, {Cond, CondState}, OptFunc, ArgsMatcher, OptCallerPid, Timeout).
 
